@@ -1,0 +1,2145 @@
+# ==============================================================
+# DIGITAL PET SIMULATOR (MIPS32) — INITIAL SETUP PHASE
+# ==============================================================
+.data
+# --- Programme Messages ---
+
+welcomeMessage:      .asciiz "=== Digital Pet Simulator (MIPS32) ===\n"
+initMessage:         .asciiz "Initialising system...\n\n"
+setParamMsg:         .asciiz "\nPlease set parameters (press Enter for default): \n"
+successMsg:          .asciiz "\nParameters set successfully!\n"
+initStatusAlive1:    .asciiz "\nYour Digital Pet, "
+initStatusAlive2:    .asciiz ", is alive! Current status:\n"
+goodbyeMsg:          .asciiz "Goodbye! Thanks for playing."
+saveMsg:             .asciiz "\nSaving session..."
+energyDepleteMsg:    .asciiz "Time +1s... Natural energy depletion!\n"
+maxEnergyErrMsg:     .asciiz "Error, maximum energy level reached! Capped to the Max.\n"
+feedMsg:             .asciiz "\nCommand recognised: Feed "
+entertainMsg:        .asciiz "\nCommand recognised: Entertain "
+petMsg:              .asciiz "\nCommand recognised: Pet "
+ignoreMsg:           .asciiz "\nCommand recognised: Ignore "
+quitMsg:             .asciiz "\nCommand recognised: Quit.\n"
+resetMsg:            .asciiz "\nCommand recognised: Reset.\n"
+resetMsg2:           .asciiz "Digital Pet has been reset to its initial state!\n"
+death_message1:      .asciiz "Error, energy level equal or less than 0. "
+death_message2:      .asciiz "is dead :(  \n"
+death_message3:      .asciiz "*** Your Digital Pet has died! ***\n"
+death_message4:      .asciiz "\nWhat's your next move? (R,Q) > "
+energy_inc_msg:	     .asciiz "Energy increased by "
+energy_dec_msg:	     .asciiz "Energy decreased by "
+units_paren_msg:      .asciiz " units ("
+units_only_msg:      .asciiz " units.\n"
+multiplied:          .asciiz "x"
+close_paren: 	     .asciiz ").\n"
+
+# --- Prompts ---
+namePrompt: .asciiz "Please enter a name for your Digital Pet: "
+edrPrompt: .asciiz "Enter Natural Energy Depletion Rate (EDR) [Default: 1]: "
+melPrompt: .asciiz "Enter Maximum Energy Level (MEL) [Default: 15]: "
+ielPrompt: .asciiz "Enter Initial Energy Level (IEL) [Default: 5]: "
+petTypePrompt: .asciiz "Enter 'C' for CAT or 'D' for DOG: "
+gameCommandPrompt: .asciiz "\nEnter a command (F, E, P, I, R, Q) > "
+energyActionPrompt: .asciiz "Press 'R' to reset your pet to its initial energy level, or 'Q' to quit the game.:"
+
+
+# --- Errors / Misc ---
+invalidInitLevelMsg:     .asciiz "\nInvalid input - programme only accepts positive integers. Please try again:\n"
+invalidEnergyRelationMsg:.asciiz "Invalid relation - initial energy cannot exceed maximum. Please try again.\n"
+invalidCommandMsg:       .asciiz "Invalid command - plase try again.\n"
+unrecognisedCmdMsg:      .asciiz "Unknown command - please try again.\n"
+todoMsg: .asciiz "Command recognised - feature not yet implemented.\n"
+limitErrorMsg:		.asciiz "\nInvalid command: Value cannot exceed 50. Please try again.\n" 
+
+msg1: .asciiz "\n\nTotal Time Alive : "
+msg2: .asciiz " seconds"
+msg3: .asciiz "\nFinal Enerygy level: "
+msg4: .asciiz "\nNumbers of commands Entered: "
+msg5: .asciiz "\nNumbers of resets: "
+msg6: .asciiz "Pet died "
+timer: .word 0
+last1: .word 0
+num1: .word 0
+num2: .word 0
+
+# --- Pet Name/Type --- 
+petType: .word 1 #0 = Cat, 1 = Dog
+petName: .space 32
+
+catHappy: .asciiz "    /\\_____/\\\n   /  o   o  \\\n  ( ==  ^  == )\n   )         (\n  (           )\n ( (  )   (  ) )\n(__(__)___(__)__)\n"
+catDead: .asciiz "    /\\_____/\\\n   /  x   x  \\\n  ( ==  ^  == )\n   )         (\n  (           )\n ( (  )   (  ) )\n(__(__)___(__)__)\n"
+catSad: .asciiz "    /\\_____/\\\n   /  >   <  \\\n  ( ==  ^  == )\n   )         (\n  (           )\n ( (  )   (  ) )\n(__(__)___(__)__)\n"
+
+dogHappy: .asciiz "         __\n        /  \\\n       / ..|\\\n      (_\\  |_)\n      /  \\@'\n     /     \\\n _  /  `   |\n\\\\/  \\  | _\\\n \\   /_ || \\\\_\n  \\____)|_) \\_)\n"
+dogDead: .asciiz "         __\n        /  \\\n       / xx|\\\n      (_\\  |_)\n      /  \\@'\n     /     \\\n _  /  `   |\n\\\\/  \\  | _\\\n \\   /_ || \\\\_\n  \\____)|_) \\_)\n"
+dogSad: .asciiz "         __\n        /  \\\n       / ><|\\\n      (_\\  |_)\n      /  \\@'\n     /     \\\n _  /  `   |\n\\\\/  \\  | _\\\n \\   /_ || \\\\_\n  \\____)|_) \\_)\n"
+
+
+# --- Energy Values ---
+EDR: .word 1
+MEL: .word 15
+IEL: .word 5
+currentEnergy: .word 0
+
+buffer: .space 20
+
+# -- Display labels for Initial Parameters --
+edrLabel:   .asciiz "- EDR: "
+edrUnits:   .asciiz " units/sec\n"
+melLabel:   .asciiz "- MEL: "
+melUnits:   .asciiz " units\n"
+ielLabel:   .asciiz "- IEL: "
+ielUnits:   .asciiz " units\n"
+
+energyLabel:     .asciiz " Energy: "
+slashSymbol:     .asciiz "/"
+barLeftBracket:  .asciiz "["
+barRightBracket: .asciiz "]"
+filledUnit:      .asciiz "#"
+emptyUnit:       .asciiz "-"
+BAR_WIDTH: .word 20
+
+spaceStr:  .asciiz " "
+
+newline:   .asciiz "\n"
+
+fullstop:  .asciiz ".\n"
+
+
+feedCount: .word 0
+petCount: .word 0
+ignoreCount: .word 0
+entertainCount: .word 0
+resetCount: .word 0
+depleteFlag: .word 0 
+petDeadFlag: .word 0
+
+# time related 
+initial_time: .word 0 
+end_time: .word 0
+elapsed_time: .word 0 
+time_interval: .word 1000
+
+#----------------
+#Persistence
+#-----------------
+
+#menu & file I/O strings
+menuPrompt:		.asciiz "Select  Mode:\n[1] Start New Game\n[2] Load Game\n"
+filePrompt:		.asciiz "\nEnter full file path of save_game.txt (Use double backslashes for directories e.g. C:\\\\User\\\\Desktop\\\\digital_pet_asm\\\\save_game.txt\n*File path must not contain spaces:\n"
+savePrompt:		.asciiz "\nNo save file loadeed. Enter full file path to save, or Press Enter to skip (\n(Use double backslashes for directories e.g. C:\\\\User\\\\digital_pet_asm\\\\save_game.txt)\n*File path must not contain spaces:\n"
+fileErrorMsg:		.asciiz "Error: Could not open file. Starting New Game...\n"
+fileEmptyMsg:       .asciiz "\nError: Save file contains no data. Starting New Game...\n"
+fileSaveSuccess:	.asciiz "\nGame saved successfully.\n"
+fileSaveFail:		.asciiz "\nError: Could not save to file.\n"
+
+#File Variables
+filePathBuffer:		.space 256        # Larger buffer for file paths
+hasFilePath:		.word 0           # Flag: 0 = No File, 1 = File Loaded/Set
+saveDataBuffer:		.space 128         # Buffer to hold 5 words (Energy, MEL, EDR, IEL, Time)
+
+#New Messages for Offline Depletion
+timePassedMsg:		.asciiz "\nWhile you were away, "
+minutesMsg:		.asciiz " minutes have passed.\n"
+depletedByMsg:		.asciiz "Energy has been depleted by: "
+originalBarMsg:		.asciiz "\nOriginal Energy Bar (at save):\n"
+updatedBarMsg:		.asciiz "Updated Energy (now):\n"
+
+.text
+.globl main
+
+# ==============================================================
+# MAIN ROUTINE
+# ==============================================================
+main:
+    	jal initSystem
+	# Print Menu
+	la $a0, menuPrompt
+	jal printString
+
+	#Read user choice 
+	la $a0, buffer
+	li $a1, 5
+	jal readUserInput
+
+	#Check input '2' for Load Game
+	lb $t0, buffer
+	li $t1, '2'
+	beq $t0, $t1, loadGameChoice
+
+	#If input != 2: New Game 
+	#Set hasFilePath = 0
+	sw $0, hasFilePath
+	jal initParam
+	j gameLoop
+
+loadGameChoice:
+	jal loadGame
+	#If load failed, $v0 returns 0, we do initParam. If success, $v0=1, skip initParam.
+	beq $v0, $0, loadFailed_DoInit
+
+	jal calculateOfflineDepletion
+
+	#If Load Success print game display:
+	la $a0, successMsg
+	jal printString
+	
+	jal displayConfig
+	jal checkEnergyStatus
+	la $a0, initStatusAlive1 
+	jal printString
+	
+  	jal printPetName
+  	la $a0, initStatusAlive2
+  	jal printString
+	
+	jal printHappyPet
+	
+	#Getting time
+	jal getSysTime
+	sw $v0, initial_time
+    
+	j gameLoop
+
+loadFailed_DoInit:
+	jal initParam
+    
+gameLoop:
+    jal checkEnergyLevel
+    lw $t0, depleteFlag   #check if depletion alredy printed health bar
+    bne $t0, $0, skipPrint 
+    jal healthBar
+    jal displayEnergyStatus
+skipPrint:
+    li $t0,0    # reset flag back
+    sw $t0, depleteFlag
+    jal getSysTime
+    sw $v0, initial_time 
+    la   $a0, gameCommandPrompt
+    jal  printString
+    lw $a0,num1
+    addi $a0,$a0,1
+    sw $a0,num1
+    la   $a0, buffer   # buffer address
+    li   $a1, 20     # max length
+    jal  readUserInput
+    jal  stripWhiteSpace
+    jal processUserCommand
+    jal getSysTime
+    sw $v0, end_time
+    jal checkTime
+    j gameLoop 
+    
+    la $t0, buffer
+    sb $0, 0($t0)
+ # Exit programme cleanly
+    li $v0, 10
+    syscall
+
+# ==============================================================
+# STUFF TO IMPLEMENT
+# ==============================================================
+checkEnergyLevel: 
+  addi $sp, $sp, -4
+  sw $ra, 0($sp)
+  
+  lw $t1, currentEnergy
+  lw $t2, MEL
+  # If currentEnergy > MEL --> cap at MEL
+  bgt $t1, $t2, maxEnergy 
+  # if currentEnergy <= 0 --> pet is dead
+  ble $t1, $0, petDead
+  jr $ra
+  
+maxEnergy:
+  add $t1, $t2, $0
+  sw $t1, currentEnergy
+  jr $ra 
+
+checkTime:
+  addi $sp, $sp, -4
+  sw $ra, 0($sp)
+  
+  lw $t0, initial_time
+  lw $t1, end_time
+  lw $t2, time_interval
+  sub $t3, $t1, $t0
+  sw $t3, elapsed_time
+  # if pet is dead, skip depletion
+  lw $t4, petDeadFlag
+  bne $t4, $0, checkTimeDone
+  # if elapsed time > time interval --> deplete 
+  bgt $t3, $t2, handleDeplete
+  b checkTimeDone
+
+handleDeplete:
+  # update flag to avoid duplicate print of energy bar from the game loop after deplete_loop finishes
+  li $t0,1
+  sw $t0, depleteFlag 
+  jal deplete
+
+checkTimeDone:
+  lw $ra, 0($sp)
+  addi $sp, $sp, 4
+  jr $ra
+
+
+deplete:
+  addi $sp, $sp, -16
+  sw $ra, 12($sp)
+  sw $s0, 8($sp)
+  sw $s1, 4($sp)
+  sw $s2, 0($sp)
+
+  # calculates how many seconds elapsed 
+  lw $t0, elapsed_time
+  lw $t1, time_interval
+  div $t0, $t1 
+  mflo $s1  # value needs to be preserved 
+  
+  li $s0, 0 # loop counter - value needs to be preserved
+
+depleteLoop:
+  beq $s0, $s1, depleteDone
+  
+  # print Time +1s... etc
+  la $a0, energyDepleteMsg
+  jal printString
+  lw $a0,timer
+  addi $a0,$a0,1
+  sw $a0,timer
+
+
+  # deplete currentEnergy 
+  lw $t3, currentEnergy
+  lw $s2, EDR
+  sub $t3, $t3, $s2 # subtract according to EDR entered by user
+  # If result will be negative --> set to zero 
+  bltz $t3, setZero
+  sw $t3, currentEnergy
+  j afterDecr
+
+setZero:
+  li $t3, 0
+  sw $t3, currentEnergy
+
+afterDecr:
+  #if energy hits zero stop
+  lw $t3, currentEnergy
+  beqz $t3, depleteDone
+  #otherwise print bar and continue
+  jal healthBar
+  jal displayEnergyStatus
+  addi $s0, $s0, 1
+  j depleteLoop
+  
+depleteDone:
+  jal getSysTime
+  sw $v0, initial_time
+  lw $s2, 0($sp)
+  lw $s1, 4($sp)
+  lw $s0, 8($sp)
+  lw $ra, 12($sp)
+  addi $sp, $sp, 16
+  jr $ra
+
+
+processUserCommand:
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+    
+    #Step one – identify whether the command is a single character or multiple characters.
+    #Step two – if single, branch to a future routine that handles single-character commands.
+    #Step three – if multiple, branch to a future routine that validates and parses the command.
+    #Step four – if valid, branch to a future routine that dispatches the command to the correct action.
+    #Step five – return control to the game loop.
+    
+
+    jal getCommandLength
+    # command length = 0
+    beq $v0, $0, emptyCommandError
+    li $t0, 1
+    # command length = 1
+    beq $t0, $v0, handleSingleCharCommand
+    # command length > 1
+    bgt $v0, $t0, handleMultiCharCommand
+
+handleSingleCharCommand:
+    # load 1st char into $t1
+    lb $t1, 0($a0)
+    # load 'R' into $t2 
+    li $t2, 82
+    # if 'R' --> call reset 
+    beq $t1, $t2, handleReset
+    # load 'Q' into $t2 
+    li $t2, 81
+    # if 'Q' --> call quit
+    beq $t1, $t2, quit 
+    # neither --> error message + return 
+    la $a0, unrecognisedCmdMsg
+    jal printString
+    b processUserCommandDone
+
+handleReset:
+   jal reset
+   b processUserCommandDone
+
+handleMultiCharCommand:
+    # load 1st char into $t0
+    lb $t0, 0($a0)
+    # check 1st is valid 
+    li $t1, 70 #'F'
+    li $t2, 69 #'E'
+    li $t3, 73 #'I'
+    li $t4, 80 #'P'
+    # direct to appropriate function 
+    beq $t0, $t1, handleF 
+    beq $t0, $t2, handleE 
+    beq $t0, $t3, handleI 
+    beq $t0, $t4, handleP
+    # if 1st char invalid 
+    la $a0, unrecognisedCmdMsg
+    jal printString
+    b processUserCommandDone
+
+emptyCommandError:
+  #TODO: to implement
+
+
+processUserCommandDone:
+# clear input buffer to avoid re-reading old commants
+    la $t0, buffer
+    sb $0, 0($t0)
+# --- Restore stack and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+# --------------------------------------------------------------
+# Purpose - Counts the number of characters in a string
+# Input   - $a0 = address of null-terminated string
+# Output  - $v0 = number of non-null characters
+# --------------------------------------------------------------
+# Register usage
+#   $t0 = pointer to current character
+#   $t1 = current character byte
+#   $t2 = counter
+# --------------------------------------------------------------
+getCommandLength:
+    # --- Stack frame setup ---
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+
+    # --- Initialise registers ---
+    move $t0, $a0          # $t0 = pointer to string
+    li   $t2, 0            # $t2 = counter initialised to 0
+
+countLoop:
+    lb   $t1, 0($t0)       # load current byte
+    beqz $t1, lengthDone   # stop when null terminator (0x00)
+    addi $t2, $t2, 1       # increment counter
+    addi $t0, $t0, 1       # move pointer to next byte
+    j    countLoop
+
+lengthDone:
+    move $v0, $t2          # move final count into return register
+
+    # --- Restore stack and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+# ----------------------------------------------------------
+setPetType:
+  # --- Stack frame setup ---
+  addi $sp, $sp, -4
+  sw   $ra, 0($sp)
+
+  jal processPetCommand
+
+  # --- Restore stack and return ---
+  lw   $ra, 0($sp)
+  addi $sp, $sp, 4
+  jr   $ra
+
+
+processPetCommand:
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+
+petPromptLoop:
+    la $a0, petTypePrompt
+    jal printString
+    la   $a0, buffer   # buffer address
+    li   $a1, 20     # max length
+    jal readUserInput
+    la $a0, buffer
+    jal stripWhiteSpace
+    jal getCommandLength
+
+    li $t0, 1
+    # command length = 1
+    beq $t0, $v0, handleSingleCharPetCommand
+    # command length > 1
+    bgt $v0, $t0, handleMultiCharPetCommand
+
+handleSingleCharPetCommand:
+    # load 1st char into $t1
+    lb $t1, 0($a0)
+    # load 'C' into $t2 
+    li $t2, 67
+    # if 'C' --> set as cat
+    beq $t1, $t2, setCat 
+    # load 'D' into $t2 
+    li $t2, 68
+    # if 'D' --> call quit
+    beq $t1, $t2, setDog
+    # neither --> error message + return 
+    la $a0, unrecognisedCmdMsg
+    jal printString
+    b petPromptLoop
+
+
+handleMultiCharPetCommand:
+    la $a0, unrecognisedCmdMsg
+    jal printString
+    b petPromptLoop
+
+
+setCat:
+  # sets petType to 0 
+    lw $t0,petType
+    add $t0, $0, $0 
+    sw $t0, petType
+  # clear input buffer to avoid re-reading old commants
+    la $t0, buffer
+    sb $0, 0($t0)
+  # --- Restore stack and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+
+setDog:
+  # sets petType to 1 
+    lw $t0, petType 
+    addi $t0, $0, 1 
+    sw $t0, petType 
+
+
+  # clear input buffer to avoid re-reading old commants
+    la $t0, buffer
+    sb $0, 0($t0)
+  # --- Restore stack and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+getPetName:
+  # --- Stack frame setup ---
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+
+    la $a0, namePrompt 
+    jal printString
+
+    # Read user input into the buffer
+    la $a0, buffer    # Buffer address
+    li $a1, 20        # Max length
+    jal readUserInput
+
+    la $a0, buffer
+    jal stripWhiteSpace
+
+    # Copy the cleaned name from the temporary buffer to the permanent petName storage
+    la $a0, petName   
+    la $a1, buffer    
+    li $a2, 32        
+    jal copyString   
+
+    # --- Restore stack and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+
+copyString:
+    # --- Stack frame setup ---
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+
+    move $t0, $a0    # $t0 = destination pointer
+    move $t1, $a1    # $t1 = source pointer
+    move $t2, $a2    # $t2 = counter
+
+copyLoop:
+    # Check if we've copied max bytes
+    beqz $t2, copyDone
+    # Load byte from source
+    lb $t3, 0($t1)
+    # Store byte to destination
+    sb $t3, 0($t0)
+    # Check for null terminator, which ends the copy
+    beqz $t3, copyDone
+    # Move pointers and decrement counter
+    addi $t0, $t0, 1
+    addi $t1, $t1, 1
+    addi $t2, $t2, -1
+    j copyLoop
+
+copyDone:
+    # Ensure destination is null-terminated even if source was too long
+    sb $zero, 0($t0) 
+    
+    # --- Restore stack and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+printPetName:
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+
+    la $a0, petName
+    jal printString
+    
+    la $a0, spaceStr
+    jal printString
+
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+
+printHappyPet:
+  # --- Stack frame setup ---
+  addi $sp, $sp, -4
+  sw   $ra, 0($sp)
+
+  lw $t0, petType            # t0 = value of pet (0 or 1)
+  # pet = 0 (cat), print cat.
+  beq $t0, $0, printHappyCat
+  # pet = 1 (dog), print dog.
+  la $a0, dogHappy
+  jal printString
+  j printHappyPetDone
+ 
+printHappyCat:
+  
+  la $a0, catHappy 
+  jal printString
+  
+
+printHappyPetDone:
+  # --- Restore stack and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+
+
+printSadPet:
+  # --- Stack frame setup ---
+  addi $sp, $sp, -4
+  sw   $ra, 0($sp)
+
+  lw $t0, petType            # t0 = value of pet (0 or 1)
+  # pet = 0 (cat), print cat.
+  beq $t0, $0, printSadCat
+  # pet = 1 (dog), print dog.
+  la $a0, dogSad 
+  jal printString
+  j printSadPetDone
+ 
+printSadCat:
+  
+  la $a0, catSad  
+  jal printString
+  
+
+printSadPetDone:
+  # --- Restore stack and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+printDeadPet:
+  # --- Stack frame setup ---
+  addi $sp, $sp, -4
+  sw   $ra, 0($sp)
+
+  lw $t0, petType            # t0 = value of pet (0 or 1)
+  # pet = 0 (cat), print cat.
+  beq $t0, $0, printDeadCat
+  # pet = 1 (dog), print dog.
+  la $a0, dogDead 
+  jal printString
+  j printDeadPetDone
+ 
+printDeadCat:
+  
+  la $a0, catDead 
+  jal printString
+  
+
+printDeadPetDone:
+  # --- Restore stack and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+# -----------------------------------------------------------
+
+reset:
+  addi $sp, $sp, -4
+  sw $ra, 0($sp)
+  
+  lw $t3,num2
+  addi $t3,$t3,1
+  sw $t3,num2
+  # increment resetCount 
+  lw $t3, resetCount
+  addi $t3, $t3, 1
+  sw $t3, resetCount
+  
+  # print reset command message
+  la $a0, resetMsg
+  jal printString
+  
+  la $a0, resetMsg2
+  jal printString
+  
+  # restore energy to IEL
+  lw $t1, IEL
+  sw $t1, currentEnergy
+  
+  # clear death flag
+  li $t2, 0
+  sw $t2, petDeadFlag
+  
+  # Reset timer so elapsed_time = 0
+  jal getSysTime
+  sw $v0, initial_time
+  
+  #print updated bar
+  jal healthBar
+  jal displayEnergyStatus
+  
+  li $t0, 1
+  sw $t0, depleteFlag
+  
+  lw $ra, 0($sp)
+  addi $sp, $sp, 4
+  jr $ra
+
+
+quit: 
+  # print quit message
+  la $a0, quitMsg
+  jal printString
+
+  # Check if file path
+  lw $t0, hasFilePath
+  bne $t0, $0, performSave  # If hasFilePath != 0, save immediately
+
+  # Else, prompt user for path
+  la $a0, savePrompt
+  jal printString
+
+  la $a0, filePathBuffer
+  li $a1, 255
+  jal readUserInput
+  
+  # Fix the newline in the path
+  la $a0, filePathBuffer
+  jal stripWhiteSpaceForPath
+
+  # Check if input was empty (user just pressed enter)
+  lb $t0, filePathBuffer
+  beqz $t0, quitWithoutSave  # If empty string, quit
+
+  # Valid path entered, set flag and save
+  li $t0, 1
+  sw $t0, hasFilePath
+  
+performSave:
+  la $a0, saveMsg
+  jal printString
+  jal saveGame
+
+quitWithoutSave:
+  la $a0, goodbyeMsg
+  jal printString
+  
+  la $a0, msg1
+  jal printString
+  lw $a0,timer
+  lw $v0,EDR
+  div $a0,$a0,$v0
+  li $v0,1
+  syscall
+ la $a0, msg2
+  jal printString
+   la $a0, msg3
+  jal printString
+  lw $a0,last1
+  li $v0,1
+  syscall
+  
+     la $a0, msg4
+  jal printString
+  lw $a0,num1
+  li $v0,1
+  syscall
+  
+     la $a0, msg5
+  jal printString
+  lw $a0,num2
+  li $v0,1
+  syscall
+  
+  
+  li $v0, 10
+  syscall
+
+# ------------------------------------------------------------------
+handleF:
+  # check substring after 'F'
+  addi $a1, $a0, 1
+  move $a0, $a1
+  jal checkInputNumeric
+  beq $v0, $0, numericError
+  # convert numeric substring to int
+  move $a0, $a1
+  jal convertStrToInt
+  move $t5, $v0
+  # pass int to feed function 
+  move $a0, $t5
+  jal feed
+  b processUserCommandDone
+
+
+handleE:
+  # check substring after 'E'
+  addi $a1, $a0, 1
+  move $a0, $a1
+  jal checkInputNumeric
+  beq $v0, $0, numericError
+  # convert numeric substring to int
+  move $a0, $a1
+  jal convertStrToInt
+  move $t5, $v0
+  # pass int to entertain function 
+  move $a0, $t5
+  jal entertain
+  b processUserCommandDone
+
+
+handleP:
+  # check substring after 'P'
+  addi $a1, $a0, 1
+  move $a0, $a1
+  jal checkInputNumeric
+  beq $v0, $0, numericError
+  # convert numeric substring to int
+  move $a0, $a1
+  jal convertStrToInt
+  move $t5, $v0
+  # pass int to pet function 
+  move $a0, $t5
+  jal pet
+  b processUserCommandDone
+
+handleI:
+  # check substring after 'I'
+  addi $a1, $a0, 1
+  move $a0, $a1
+  jal checkInputNumeric
+  beq $v0, $0, numericError
+  # convert numeric substring to int
+  move $a0, $a1
+  jal convertStrToInt
+  move $t5, $v0
+  # pass int to ignore function 
+  move $a0, $t5
+  jal ignore
+  b processUserCommandDone
+
+numericError:
+    la $a0, unrecognisedCmdMsg
+    jal printString
+    b processUserCommandDone
+
+#------------------------------------------------------------------------
+#                      MAIN FUNCTIONS - Feed, Entertain, Pet, Ignore
+# Integer (n) is kept in $a0 (and $t5) 
+#------------------------------------------------------------------------
+feed:
+  # set up stack 
+  addi $sp, $sp, -4
+  sw $ra, 0($sp)
+
+  # print feed message - command recognised
+  la $a0, feedMsg
+  li $v0, 4
+  syscall
+
+  move $a0, $t5
+  li $v0, 1
+  syscall
+
+  la $a0, fullstop
+  li $v0, 4
+  syscall 
+  
+  #Updating Current energy
+  move $a0, $t5   # a0 = count (n feed actions)
+  li   $a1, 1     # a1 = per-pet value (e.g., +1 energy per feed)
+  jal  increase_energy
+  
+  # Detect max cap and print correct output
+  lw $t0, currentEnergy
+  lw $t1, MEL
+  beq $t0, $t1, feedMaxCap # if capped skip energy increase msg
+  
+  # Energy increased by n units
+  la $a0, energy_inc_msg
+  jal printString
+  
+  move $a0, $t5
+  jal printInt
+  
+  la $a0, units_only_msg
+  jal printString
+ 
+  jal printHappyPet
+
+  j feedPrintBar
+  
+feedMaxCap:
+  jal printHappyPet 
+  la $a0, maxEnergyErrMsg
+  jal printString
+  
+feedPrintBar:
+  # Print updated bar for energy
+  jal healthBar
+  jal displayEnergyStatus
+  la $a0, newline
+  jal printString
+  
+  li $t0, 1
+  sw $t0, depleteFlag
+  # reallocate stack and return
+  lw $ra, 0($sp)
+  addi $sp, $sp, 4
+  jr   $ra
+
+entertain:
+  #stack setup 
+  addi $sp, $sp, -4
+  sw $ra, 0($sp)
+
+  # print entertain message - command recognised
+  la $a0, entertainMsg
+  li $v0, 4
+  syscall
+
+  move $a0, $t5
+  li $v0, 1
+  syscall
+
+  la $a0, fullstop
+  li $v0, 4
+  syscall
+  
+  #Updating Current energy
+  move $a0, $t5   # a0 = count (n feed actions)
+  li   $a1, 2     # a1 = per-enterain value (e.g., +1 energy per feed)
+  jal  increase_energy
+  
+  # Detect max cap and print error
+  lw $t0, currentEnergy
+  lw $t1, MEL
+  beq $t0, $t1, entertainMaxCap
+  
+  # Energy increased by 2*n units
+  li $t6, 2
+  mul $t7, $t5, $t6
+  
+  la $a0, energy_inc_msg
+  jal printString
+  move $a0, $t7
+  jal printInt
+  
+  la $a0, units_paren_msg
+  jal printString
+  
+  li $a0, 2
+  jal printInt
+  la $a0, multiplied
+  jal printString
+  
+  move $a0, $t5
+  jal printInt
+  la $a0, close_paren
+  jal printString
+  
+  jal printHappyPet
+
+  j entertainPrintBar
+
+entertainMaxCap:
+  jal printHappyPet
+  la $a0, maxEnergyErrMsg
+  jal printString
+  
+  # Print updated bar for energy
+entertainPrintBar:
+  jal healthBar
+  jal displayEnergyStatus
+  la $a0, newline
+  jal printString
+
+  li $t0, 1
+  sw $t0, depleteFlag
+  # reallocate stack and return
+  lw $ra, 0($sp)
+  addi $sp, $sp, 4
+  jr   $ra  
+
+pet:
+  # stack setup
+  addi $sp, $sp, -4
+  sw $ra, 0($sp)
+
+  # print pet message - Command recognised
+  la $a0, petMsg
+  li $v0, 4
+  syscall
+
+  move $a0, $t5
+  li $v0, 1
+  syscall
+
+  la $a0, fullstop
+  li $v0, 4
+  syscall
+  
+  #Increase energy
+  move $a0, $t5   # a0 = count (n feed actions)
+  li   $a1, 2     # a1 = +2 energy per pet
+  jal  increase_energy
+  
+  # Detect max cap and print error
+  lw $t0, currentEnergy
+  lw $t1, MEL
+  beq $t0, $t1, petMaxCap
+  
+  # Energy increased by 2*n
+  li $t6, 2
+  mul $t7, $t5, $t6
+  
+  la $a0, energy_inc_msg
+  jal printString
+  move $a0, $t7
+  jal printInt
+   
+  la $a0, units_paren_msg
+  jal printString
+  
+  li $a0, 2
+  jal printInt
+  la $a0, multiplied
+  jal printString
+  
+  move $a0, $t5
+  jal printInt
+  la $a0, close_paren
+  jal printString
+
+  jal printHappyPet
+
+  j petPrintBar
+  
+petMaxCap:
+  jal printHappyPet
+  la $a0, maxEnergyErrMsg
+  jal printString
+  
+  # Print updated bar for energy
+petPrintBar:
+  jal healthBar
+  jal displayEnergyStatus
+  la $a0, newline
+  jal printString
+  
+  li $t0, 1
+  sw $t0, depleteFlag
+  # reallocate stack and return
+  lw $ra, 0($sp)
+  addi $sp, $sp, 4
+  jr   $ra
+
+ignore:
+  # stack setup
+  addi $sp, $sp, -4
+  sw $ra, 0($sp)
+
+  # print ignore message - command recognised
+  la $a0, ignoreMsg
+  li $v0, 4
+  syscall
+
+  move $a0, $t5
+  li $v0, 1
+  syscall
+
+  la $a0, fullstop
+  li $v0, 4
+  syscall
+  
+  # Energy decreased by 3*n
+  li $t6, 3
+  mul $t7, $t5, $t6
+  
+  la $a0, energy_dec_msg
+  jal printString
+  move $a0, $t7
+  jal printInt
+  
+  la $a0, units_paren_msg
+  jal printString
+  
+  li $a0, 3
+  jal printInt
+  la $a0, multiplied
+  jal printString
+  
+  move $a0, $t5
+  jal printInt
+  la $a0, close_paren
+  jal printString 
+
+  #Decrease Energy
+  move $a0, $t5   # a0 = count (n feed actions)
+  li   $a1, -3     # a1 = -3 energy per ignore
+  jal  increase_energy
+  
+  # Check if pet died due to this ignore
+  lw $t0, currentEnergy
+  blez $t0, ignoreCausedDeath
+
+  # print sad cat 
+  jal printSadPet
+  # Print updated bar for energy
+  jal healthBar
+  jal displayEnergyStatus
+  la $a0, newline
+  jal printString
+  
+  li $t0, 1
+  sw $t0, depleteFlag
+  # reallocate stack and return
+  lw $ra, 0($sp)
+  addi $sp, $sp, 4
+  jr   $ra
+  
+ignoreCausedDeath:
+  jal petDead
+
+  lw $ra, 0($sp)
+  addi $sp, $sp, 4
+  jr   $ra
+
+#----------------------------------------------------------------
+# increase_energy
+# Inputs:
+#   $a0 = count  (number of repetitions)
+#   $a1 = inc    (value to add to currentEnergy each repetition)
+# Behavior: adds (inc * count) to currentEnergy by looping count times.
+#----------------------------------------------------------------
+increase_energy:
+    addi $sp, $sp, -8
+    sw   $ra, 4($sp)
+    sw $t5, 0($sp)
+    move $t5, $a0    # t5 = loop counter from action
+    move $t1, $a1    # t1 = increment per iteration
+
+ie_loop:
+    lw   $t0, currentEnergy
+    add  $t0, $t0, $t1
+    sw   $t0, currentEnergy
+    addi $t5, $t5, -1
+    bgtz $t5, ie_loop
+    
+    lw $t0, currentEnergy
+    #if <=0 -> set to 0
+    blez $t0, ie_set_zero
+    
+    #if > MEL -> set to MEL
+    lw $t1, MEL
+    ble $t0, $t1, ie_store_done
+    move $t0, $t1
+
+ie_store_done:
+    sw $t0, currentEnergy
+    j ie_done
+
+ie_set_zero:
+    li $t0, 0
+    sw $t0, currentEnergy
+
+ie_done:
+    lw $t5, 0($sp)
+    lw   $ra, 4($sp)
+    addi $sp, $sp, 8
+    jr   $ra
+
+# ==============================================================
+# END OF  TO IMPLEMENY
+# ==============================================================
+
+# initSystem — Displays start-up messages
+initSystem:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    la $a0, welcomeMessage
+    jal printString
+
+    la $a0, initMessage
+    jal printString
+   
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
+
+# ==============================================================
+# initParam — Initialises EDR, MEL, and IEL using getInitParamValue
+# Includes loop to re-prompt on invalid input
+# Includes validation ensuring IEL ≤ MEL
+# ==============================================================
+initParam:
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+    
+    la $a0, setParamMsg
+    jal printString
+
+askEDR:
+    # --- Get EDR ---
+    la   $a0, edrPrompt
+    la   $a1, EDR
+    li   $a2, 1
+    la   $a3, buffer        # pass the buffer address as an extra argument
+    jal  getInitParamValue
+
+    #Check EDR limit
+    lw $t0, EDR
+    li $t1, 50
+    ble $t0, $t1, checkMEL_and_IEL   
+    
+    #if EDR > 50
+    la $a0, limitErrorMsg
+    jal printString
+    j askEDR    
+
+checkMEL_and_IEL:
+    # --- Get MEL ---
+    la   $a0, melPrompt
+    la   $a1, MEL
+    li   $a2, 15
+    la   $a3, buffer   
+    jal  getInitParamValue
+    
+    # MEL limit  50
+    lw $t0, MEL
+    li $t1, 50
+    ble $t0, $t1, askIEL
+    
+    #MEL >50 Error 
+    la $a0, limitErrorMsg
+    jal printString
+    j checkMEL_and_IEL
+
+askIEL:
+    # --- Get IEL ---
+    la   $a0, ielPrompt
+    la   $a1, IEL
+    li   $a2, 5
+    la   $a3, buffer 
+    jal  getInitParamValue
+
+    # --- Validate logical relationship IEL ≤ MEL ---
+    lw   $t0, IEL        # load IEL value
+    lw   $t1, MEL        # load MEL value
+
+    ble  $t0, $t1, initParamsValid   # if IEL ≤ MEL → continue
+    la   $a0, invalidEnergyRelationMsg
+    jal  printString             # show error message
+    j    checkMEL_and_IEL        # re-enter loop for MEL and IEL
+
+initParamsValid:
+    # --- All parameters valid ---
+    # Set currentEnergy = IEL
+    la   $t0, IEL             # load address of IEL
+    lw   $t1, 0($t0)          # load IEL value
+    la   $t2, currentEnergy   # load address of currentEnergy
+    sw   $t1, 0($t2)          # store IEL value into currentEnergy
+    
+     # Display success message
+    la   $a0, successMsg
+    jal  printString
+    jal displayConfig
+
+    # Prompt user for cat or dog
+    jal setPetType
+
+    jal getPetName
+
+    jal printHappyPet
+    jal checkEnergyStatus
+    la   $a0, initStatusAlive1  # Load alive message
+    jal  printString
+    jal printPetName
+    la $a0, initStatusAlive2
+    jal printString
+
+
+    # Restore and return
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+
+# readUserInput — Reads a string into buffer
+# $a0 = buffer address, $a1 = max length
+readUserInput:
+    li $v0, 8
+    syscall
+    jr $ra
+    
+# getInitParamValue
+# $a0 = address of prompt string
+# $a1 = address of variable to store result
+# $a2 = default value (integer)
+getInitParamValue:
+    addi $sp, $sp, -20
+    sw   $ra, 16($sp)        # save return
+    sw   $a0, 12($sp)        # save prompt
+    sw   $a1, 8($sp)         # save dest address
+    sw   $a2, 4($sp)         # save default value
+    sw   $a3, 0($sp)         # save buffer address
+
+initPromptLoop:
+    # show prompt
+    lw   $a0, 12($sp)        # prompt
+    jal  printString
+
+    # read input into buffer
+    lw   $a0, 0($sp)         # buffer address
+    li   $a1, 20   # max length
+    jal  readUserInput
+
+
+    # blank check
+    lw   $a0, 0($sp)
+    jal  checkBlankInput
+    beq  $v0, 1, useDefaultParams
+
+    # numeric check
+    lw   $a0, 0($sp)
+    jal  checkInputNumeric
+    beq  $v0, $zero, invalidInitParamInput
+
+    # convert buffer -> int
+    lw   $a0, 0($sp)
+    jal  convertStrToInt
+
+    # store to destination address saved on stack
+    lw   $t0, 8($sp)         # dest pointer
+    sw   $v0, 0($t0)
+    j    initParamComplete
+
+invalidInitParamInput:
+    la   $a0, invalidInitLevelMsg
+    jal  printString
+    j    initPromptLoop
+
+useDefaultParams:
+    lw   $t1, 4($sp)         # default
+    lw   $t0, 8($sp)         # dest pointer
+    sw   $t1, 0($t0)
+
+initParamComplete:
+    lw   $ra, 16($sp)
+    addi $sp, $sp, 20
+    jr   $ra
+
+
+# checkBlankInput — Returns 1 if input only newline, else 0
+# $a0 = buffer address, $v0 = result
+checkBlankInput:
+    lb $t0, 0($a0)  # load first byte
+    li $t1, 10  # newline ASCII code
+    beq $t0, $t1, isBlank
+    li $v0, 0          # not blank
+    jr $ra
+
+isBlank:
+    li $v0, 1          # blank input
+    jr $ra
+
+# checkInputNumeric — Checks if string contains only digits 0–9
+# Input  $a0 = string address
+# Output $v0 = 1 if all digits, 0 otherwise
+checkInputNumeric:
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+
+    move $t0, $a0          # move string address to temporary register
+
+checkNumericLoop:
+    lb   $t1, 0($t0)       # load current byte
+    # changed these as not compatible with stripWhiteSpace
+    # li   $t2, 10  # load newline ASCII code
+    # beq  $t1, $t2, isAllDigits  # if newline → done
+    beqz $t1, isAllDigits
+    li $t2, 10 #'\n'
+    beq $t1, $t2, isAllDigits
+
+    blt  $t1, '0', notAllDigits   # below '0'? invalid
+    bgt  $t1, '9', notAllDigits   # above '9'? invalid
+
+    addi $t0, $t0, 1        # move to next char
+    j    checkNumericLoop
+
+notAllDigits:
+    li   $v0, 0
+    j    endNumericInputCheck
+
+isAllDigits:
+    li   $v0, 1
+
+endNumericInputCheck:
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+
+# convertStrToInt — Converts a numeric string (only digits) to integer
+# Input  $a0 = string address
+# Output $v0 = integer value (safe, overflow-protected)
+convertStrToInt:
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+
+    move $t0, $a0          # pointer to string
+    li   $t4, 0            # accumulator = 0
+
+convertStr2IntLoop:
+    lb   $t1, 0($t0)       # load current character
+    beq  $t1, $zero, convertStr2IntDone
+    li   $t2, 10
+    beq  $t1, $t2, convertStr2IntDone
+
+    li   $t2, 48
+    sub  $t1, $t1, $t2     # convert ASCII → numeric digit (0–9)
+
+    move $t3, $t4          # save current accumulator before multiply
+    mul  $t4, $t4, 10      # shift previous digits left by one decimal place
+
+    # --- Overflow check (approximation via comparison) ---
+    blt  $t4, $t3, overflow   # if new value < old value → overflow occurred
+
+    add  $t4, $t4, $t1     # add new digit to accumulator
+    blt  $t4, $t3, overflow # check again after addition
+
+    addi $t0, $t0, 1        # move to next char
+    j    convertStr2IntLoop
+
+overflow:
+    li   $t4, 0             # reset accumulator to safe zero
+    j    convertStr2IntDone
+
+convertStr2IntDone:
+    move $v0, $t4           # move accumulator into return register
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+
+
+# checkInitEnergyStatus — Determines if the pet is alive or dead based on user inputs upon app startup
+# and displays the appropriate status message accoridngly 
+checkEnergyStatus:
+    addi $sp, $sp, -4        # Allocate stack space
+    sw   $ra, 0($sp)         # Save return address
+
+    # --- Load current energy value ---
+    la   $t0, currentEnergy  # Load address of currentEnergy
+    lw   $t1, 0($t0)         # Load its value into $t1
+
+    # --- Compare with zero ---
+    blez $t1, petDead        # If currentEnergy ≤ 0 → dead
+    # otherwise, exit
+    lw   $ra, 0($sp)          # Restore return address
+    addi $sp, $sp, 4          # Deallocate stack
+    jr   $ra                  # Return to caller
+ 
+petDead:
+    #mark pet as dead
+    li $t0, 1
+    sw $t0,petDeadFlag
+    # set currentEnergy to 0 
+    lw $t1, currentEnergy
+    add $t1, $0, $0 
+    sw $t1, currentEnergy
+    # print death message and healthBar
+    la $a0, death_message1
+    jal printString 
+    jal printPetName
+    la $a0, death_message2
+    jal printString
+    jal healthBar
+    jal displayEnergyStatus
+    jal printDeadPet
+    la $a0, death_message3 
+    jal printString
+    la $a0, death_message4
+    jal printString
+
+deathInputLoop:
+    la $a0, buffer
+    li $a1, 20
+    jal readUserInput
+    jal stripWhiteSpace
+    
+    # Length must be exactly 1
+    jal getCommandLength
+    li $t0, 1
+    bne $v0, $t0, deathInvalid
+    
+    # check char
+    lb $t0, 0($a0)
+    
+    li $t2, 82 # R
+    beq $t0, $t2, deathReset
+    
+    li $t2, 81 # Q
+    beq $t0, $t2, quit
+
+deathInvalid:
+    la $a0, unrecognisedCmdMsg
+    jal printString
+    
+    la $a0, death_message4
+    jal printString
+    
+    j deathInputLoop
+
+deathReset:
+    jal reset
+    j deathExit
+
+deathExit:
+    j gameLoop
+    
+
+
+healthBar:
+  addi $sp, $sp, -4
+  sw $ra, 0($sp)
+
+  lw $t0, currentEnergy
+  lw $t1, MEL
+  li $t2, 0
+  li $t4, 0
+
+  sub $t3, $t1, $t0
+
+  li $v0, 11
+  li $a0, 91 #'['
+  syscall
+block_loop:
+  beq $t0, $t2, dash_loop
+  li $v0, 11
+  li $a0, 9608 # '█'
+  syscall
+  addi $t2, $t2, 1
+  j block_loop
+dash_loop:
+  beq $t4, $t3, end_health_bar
+  li $v0, 11
+  li $a0, 45 # '-'
+  syscall
+  addi $t4, $t4, 1
+  j dash_loop 
+end_health_bar:
+  li $v0, 11
+  li $a0, 93 # ']'
+  syscall
+
+  lw $ra, 0($sp)
+  addi $sp, $sp, 4
+  jr $ra 
+
+
+# displayEnergyStatus - shows numeric energy state as “Energy: current/max”
+displayEnergyStatus:
+    addi $sp, $sp, -4
+    sw   $ra, 0($sp)
+
+    move $t0, $a0              # save original $a0 in a temporary register
+
+    # --- Print label ---
+    la   $a0, energyLabel
+    jal  printString
+    move $a0, $t0              # restore $a0
+
+
+
+    # --- Print current energy value ---
+    lw   $a0, currentEnergy
+    ble $a0,0,jump
+    sw $a0,last1
+    jump:
+    jal  printInt
+    move $a0, $t0
+
+    # --- Print slash separator ---
+    la   $a0, slashSymbol
+    jal  printString
+    move $a0, $t0
+
+    # --- Print maximum energy value ---
+    lw   $a0, MEL
+    jal  printInt
+    move $a0, $t0
+
+    # --- Print newline ---
+    la   $a0, newline
+    jal  printString
+
+    # --- Restore and return ---
+    lw   $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr   $ra
+
+     
+# ==============================================================
+# OUTPUT UTILITIES — Handles all display and printing routines
+# ==============================================================
+# printString — Prints a string whose address is in $a0
+printString:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    li $v0, 4
+    syscall
+
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
+
+# printInt - prints the integer value stored in $a0
+printInt:
+    # --- Save return address on stack (safety) ---
+    addi $sp, $sp, -4      # make space on the stack
+    sw $ra, 0($sp)         # store return address
+
+    # --- Perform the print syscall ---
+    li $v0, 1              # service code for print integer
+    syscall                # print the integer stored in $a0
+
+    # --- Restore return address and stack ---
+    lw $ra, 0($sp)         # load saved return address
+    addi $sp, $sp, 4       # free the stack space
+
+    jr $ra                 # return to caller
+    
+# displayConfig - displays EDR, MEL, and IEL configuration values
+displayConfig:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    la $a0, edrLabel
+    lw $a1, EDR
+    la $a2, edrUnits
+    jal printLabelAndValue
+
+    la $a0, melLabel
+    lw $a1, MEL
+    la $a2, melUnits
+    jal printLabelAndValue
+
+    la $a0, ielLabel
+    lw $a1, IEL
+    la $a2, ielUnits
+    jal printLabelAndValue
+    
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
+
+
+# printLabelAndValue - prints a label, an integer, and a unit string
+# Arguments -
+#   $a0 - address of label string
+#   $a1 - integer value to print
+#   $a2 - address of unit string
+printLabelAndValue:
+    addi $sp, $sp, -16     
+    sw $ra, 0($sp)         
+    sw $a0, 4($sp)          # save label address
+    sw $a1, 8($sp)          # save integer value
+    sw $a2, 12($sp)         # save unit string
+
+    # --- Print label ---
+    lw $a0, 4($sp)
+    jal printString
+
+    # --- Print integer value ---
+    lw $a0, 8($sp)
+    jal printInt
+
+    # --- Print unit string ---
+    lw $a0, 12($sp)
+    jal printString
+
+    lw $ra, 0($sp)         
+    addi $sp, $sp, 16     
+    jr $ra
+
+# ===================================================================================================================
+# GAME COMMAND STUFF - FIND A BETTER NAME FOR THIS SECTION LATER BUT INCLUDES SUBROUTINES FOR FEED, ENTERTAIN ETC.
+# ====================================================================================================================
+resetEnergy:
+    la   $t0, IEL            # Load address of IEL
+    lw   $t1, 0($t0)         # Load IEL value
+    la   $t2, currentEnergy  # Load address of currentEnergy
+    sw   $t1, 0($t2)         # Store IEL value into currentEnergy
+    jr   $ra                 # Return to caller
+
+   
+   
+# ===================================================================================================================
+# TIME RELATED STUFF - FIND A BETTER NAME FOR THIS SECTION LATER BUT INCLUDES SUBROUTINES FOR FEED, ENTERTAIN ETC.
+# ====================================================================================================================
+getSysTime:
+    addi $sp, $sp, -8        # create space for $ra and $a0
+    sw $ra, 4($sp)
+    sw $a0, 0($sp)
+
+    li $v0, 30               # syscall 30 - get system time
+    syscall
+
+    move $v0, $a0            # move system time into return register
+
+    lw $a0, 0($sp)
+    lw $ra, 4($sp)
+    addi $sp, $sp, 8
+    jr $ra
+    
+   
+# ===================================================================================================================
+# OTHER PROCEDURES CALLED IN GAME LOOP 
+# ====================================================================================================================
+stripWhiteSpace:
+    # preserve registers
+    addi $sp, $sp, -12
+    sw $ra, 8($sp)
+    sw $s0, 4($sp)
+    sw $s1, 0($sp)
+
+    move $s0, $a0        # $s0 = read pointer
+    move $s1, $a0        # $s1 = write pointer
+
+strip_loop:
+    lb $t0, 0($s0)       # load next byte
+    beqz $t0, strip_done # stop at null terminator
+
+    # check for space (0x20), tab (0x09), newline (0x0A)
+    li $t1, 32
+    beq $t0, $t1, skip_char
+    li $t1, 10
+    beq $t0, $t1, skip_char
+    li $t1, 9
+    beq $t0, $t1, skip_char
+
+    # not whitespace → keep it
+    sb $t0, 0($s1)
+    addi $s1, $s1, 1
+
+skip_char:
+    addi $s0, $s0, 1
+    j strip_loop
+
+strip_done:
+    sb $zero, 0($s1)     # null-terminate the cleaned string
+
+    # restore registers
+    lw $s1, 0($sp)
+    lw $s0, 4($sp)
+    lw $ra, 8($sp)
+    addi $sp, $sp, 12
+    jr $ra
+
+
+#===========================#
+# Persistance Helper Function
+#===========================#
+
+# loadGame: Prompts path, opens file, reads data, fills variables
+loadGame:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    # Prompt
+    la $a0, filePrompt
+    jal printString
+    
+    # Read Path
+    la $a0, filePathBuffer
+    li $a1, 255
+    jal readUserInput
+    
+    # Fix newline
+    la $a0, filePathBuffer
+    jal stripWhiteSpaceForPath
+    
+    # Open File
+    la $a0, filePathBuffer
+    li $a1, 0
+    li $a2, 0
+    li $v0, 13
+    syscall
+    
+    move $s0, $v0  # Save File Descriptor
+    bltz $s0, loadError 
+
+    # Read File 
+    # Read 88 bytes directly into saveDataBuffer
+    move $a0, $s0
+    la $a1, saveDataBuffer
+    li $a2, 88
+    li $v0, 14
+    syscall
+    
+    move $t0, $v0   # Save the number of bytes actually read into $t0
+    
+    
+    # Close File 
+    move $a0, $s0
+    li $v0, 16
+    syscall
+    
+    #if bytes less than 88 = either no data or data is corrupted 
+    li $t1, 88
+    blt $t0, $t1, loadEmptyError
+  
+    # Load Standard Vars
+    la $t0, saveDataBuffer
+    
+    # Load Standard Vars
+    lw $t1, 0($t0)
+    sw $t1, currentEnergy
+    lw $t1, 4($t0)
+    sw $t1, MEL
+    lw $t1, 8($t0)
+    sw $t1, EDR
+    lw $t1, 12($t0)
+    sw $t1, IEL
+    lw $t1, 16($t0)
+    sw $t1, initial_time
+    
+    #Load Pet Type and Stats
+    lw $t1, 20($t0)
+    sw $t1, petType
+    
+    lw $t1, 24($t0)
+    sw $t1, feedCount
+    
+    lw $t1, 28($t0)
+    sw $t1, entertainCount
+    
+    lw $t1, 32($t0)
+    sw $t1, petCount
+    
+    lw $t1, 36($t0)
+    sw $t1, ignoreCount
+    
+    lw $t1, 40($t0)
+    sw $t1, resetCount
+    
+    lw $t1, 44($t0)
+    sw $t1, num1
+    
+    lw $t1, 48($t0)
+    sw $t1, num2
+    
+    lw $t1, 52($t0)
+    sw $t1, timer
+
+    # Load Pet Name
+    # Copy from saveDataBuffer + 56 -> petName variable
+    addi $t1, $t0, 56    # Source (Buffer + 56)
+    la $t2, petName      # Destination
+    li $t3, 32           # Max length
+
+load_name_loop:
+    lb $t4, 0($t1)       # Load byte from buffer
+    sb $t4, 0($t2)       # Store byte to petName
+    beqz $t4, load_name_done 
+    addi $t1, $t1, 1
+    addi $t2, $t2, 1
+    addi $t3, $t3, -1
+    bgtz $t3, load_name_loop
+
+load_name_done:
+
+    # Set hasFilePath = 1
+    li $t1, 1
+    sw $t1, hasFilePath
+    li $v0, 1
+    j loadReturn
+
+loadEmptyError:
+    la $a0, fileEmptyMsg
+    jal printString
+    sw $0, hasFilePath
+    li $v0, 0 # fail
+    j loadReturn
+    
+loadError:
+    la $a0, fileErrorMsg
+    jal printString
+    sw $0, hasFilePath
+    li $v0, 0 # Fail
+
+loadReturn:
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
+    
+# saveGame: Saves 5 variables to filePathBuffer
+# saveGame: Saves variables, stats, type, and name to filePathBuffer
+saveGame:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    #Pack variables
+    la $t0, saveDataBuffer
+    
+    # save Standard Game Vars (Safe, before any function calls)
+    lw $t1, currentEnergy
+    sw $t1, 0($t0)
+    lw $t1, MEL
+    sw $t1, 4($t0)
+    lw $t1, EDR
+    sw $t1, 8($t0)
+    lw $t1, IEL
+    sw $t1, 12($t0)
+    
+    # 2. Get Current Time
+    jal getSysTime
+   
+    la $t0, saveDataBuffer 
+   
+
+    sw $v0, 16($t0)   # Save time 
+
+    # Save Pet Type and Stats
+    lw $t1, petType
+    sw $t1, 20($t0)
+    
+    lw $t1, feedCount
+    sw $t1, 24($t0)
+    
+    lw $t1, entertainCount
+    sw $t1, 28($t0)
+    
+    lw $t1, petCount
+    sw $t1, 32($t0)
+    
+    lw $t1, ignoreCount
+    sw $t1, 36($t0)
+    
+    lw $t1, resetCount
+    sw $t1, 40($t0)
+    
+    lw $t1, num1         # Commands entered
+    sw $t1, 44($t0)
+    
+    lw $t1, num2         # Resets (secondary)
+    sw $t1, 48($t0)
+    
+    lw $t1, timer        # Total time alive
+    sw $t1, 52($t0)
+
+    #Save Pet Name 
+    la $t1, petName       # Source
+    addi $t2, $t0, 56     # Destination (Buffer + 56)
+    li $t3, 32            # Max length (32 bytes)
+
+save_name_loop:
+    lb $t4, 0($t1)        # Load byte from name
+    sb $t4, 0($t2)        # Store byte to buffer
+    beqz $t4, save_name_done # If null terminator, we are done
+    addi $t1, $t1, 1
+    addi $t2, $t2, 1
+    addi $t3, $t3, -1
+    bgtz $t3, save_name_loop 
+
+save_name_done:
+
+    # Open File (Write Mode)
+    la $a0, filePathBuffer
+    li $a1, 1      
+    li $a2, 0
+    li $v0, 13
+    syscall
+      
+    move $s0, $v0
+    bltz $s0, saveError
+
+    # Write File 
+    move $a0, $s0
+    la $a1, saveDataBuffer
+    li $a2, 88   # Write 88 bytes
+    li $v0, 15
+    syscall
+
+    # Close File
+    move $a0, $s0
+    li $v0, 16
+    syscall
+
+    la $a0, fileSaveSuccess
+    jal printString
+    j saveReturn
+    
+saveError:
+    la $a0, fileSaveFail
+    jal printString
+
+saveReturn:
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
+    
+stripWhiteSpaceForPath:
+#preserve registers
+	addi $sp, $sp, -12
+	sw $ra, 8($sp)
+	sw $s0, 4($sp)
+	sw $s1, 0($sp)
+
+	move $s0, $a0        # $s0 = read pointer
+	move $s1, $a0        # $s1 = write pointer
+
+strip_loop_path:
+	lb $t0, 0($s0)       # load next byte
+	beqz $t0, strip_done_path # stop at null terminator
+
+	#check for space (0x20),newline (0x0A)
+	li $t1, 32
+	beq $t0, $t1, skip_char_path
+	li $t1, 10
+	beq $t0, $t1, skip_char_path
+
+	#not whitespace → keep it
+	sb $t0, 0($s1)
+	addi $s1, $s1, 1
+
+skip_char_path:
+	addi $s0, $s0, 1
+	j strip_loop_path
+
+strip_done_path:
+	sb $zero, 0($s1)     # null-terminate the cleaned string
+	
+	#restore registers
+	lw $s1, 0($sp)
+	lw $s0, 4($sp)
+	lw $ra, 8($sp)
+	addi $sp, $sp, 12
+	jr $ra
+
+# ==============================================================
+# calculateOfflineDepletion
+# Updates energy and total time alive timer
+# ==============================================================
+calculateOfflineDepletion:
+	addi $sp, $sp, -20
+	sw $ra, 16($sp)
+	sw $s0, 12($sp) # Saved Time
+	sw $s1, 8($sp)  # Current Time
+	sw $s2, 4($sp)  # Elapsed Minutes
+	sw $s3, 0($sp)  # Depletion Amount
+
+	#Display original state first
+	la $a0, originalBarMsg
+	jal printString
+	jal healthBar
+	jal displayEnergyStatus
+
+	#Get Current Time and calculate difference
+	lw $s0, initial_time
+	jal getSysTime
+	move $s1, $v0
+
+	sub $t0, $s1, $s0      # $t0 = total milliseconds elapsed
+	li $t1, 60000          # 60,000 ms in a minute
+	div $t0, $t1
+	mflo $s2               # $s2 = Total full minutes passed
+	
+	#calculate time alive 
+	li $t7, 60
+    	mul $t7, $s2, $t7      # $t7 = Seconds passed while offline
+    	lw $t8, timer          # Load existing total time
+    	add $t8, $t8, $t7      # Adding offline time
+   	sw $t8, timer          
+   	
+	#Calculate Depletion (Minutes * EDR)
+	lw $t2, EDR
+	mul $s3, $s2, $t2      # $s3 = total energy to lose
+
+	#Display Info
+	la $a0, timePassedMsg
+	jal printString
+	move $a0, $s2
+	jal printInt
+	la $a0, minutesMsg
+	jal printString
+	
+	la $a0, depletedByMsg
+	jal printString
+	move $a0, $s3
+	jal printInt
+	la $a0, newline
+	jal printString
+
+	#Apply Depletion to currentEnergy
+	lw $t3, currentEnergy
+	sub $t3, $t3, $s3
+
+	#Prevent energy from being < 0 csa
+	bgtz $t3, storeNewEnergy
+	li $t3, 0
+	
+storeNewEnergy:
+	sw $t3, currentEnergy
+	#Show updated status
+	la $a0, updatedBarMsg
+	jal printString
+	jal healthBar
+	jal displayEnergyStatus
+
+	lw $s3, 0($sp)
+	lw $s2, 4($sp)
+	lw $s1, 8($sp)
+	lw $s0, 12($sp)
+	lw $ra, 16($sp)
+	addi $sp, $sp, 20
+	jr $ra
+
